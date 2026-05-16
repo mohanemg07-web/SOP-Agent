@@ -1,0 +1,15 @@
+.env
+__pycache__/
+*.py[cod]
+*$py.class
+.DS_Store
+chroma_db/
+data/
+.streamlit/
+venv/
+env/
+.venv/
+node_modules/
+dist/
+build/
+*.pdf
