@@ -516,25 +516,38 @@ else:
 
     cols = st.columns(4)
 
-    prompts = [
+    # Build dynamic prompts from the real step titles
+    _steps = st.session_state.step_list
+    _s1_id    = _steps[0]["id"]    if len(_steps) > 0 else "step_1"
+    _s1_title = _steps[0]["title"] if len(_steps) > 0 else "Step 1"
+    _s2_id    = _steps[1]["id"]    if len(_steps) > 1 else "step_2"
+    _s2_title = _steps[1]["title"] if len(_steps) > 1 else "Step 2"
+
+    _prompts = [
         "What are the first 3 steps?",
-        "Execute step_1",
-        "Why does step_2 exist?",
+        f"Execute {_s1_id}",
+        f"Why does {_s2_title} exist?",
         "Check my progress",
     ]
+    _labels = [
+        "📋 List first 3 steps",
+        f"▶ Execute {_s1_title[:18]}{'...' if len(_s1_title) > 18 else ''}",
+        f"❓ Why {_s2_title[:18]}{'...' if len(_s2_title) > 18 else ''}?",
+        "📊 Check my progress",
+    ]
 
-    for col, prompt_text in zip(cols, prompts):
+    for col, (_label, _prompt_text) in zip(cols, zip(_labels, _prompts)):
         with col:
-            if st.button(prompt_text, key=f"btn_{prompt_text}"):
+            if st.button(_label, key=f"btn_{_prompt_text}"):
                 # Inject the prompt as if the user typed it
                 with st.chat_message("user"):
-                    st.markdown(prompt_text)
+                    st.markdown(_prompt_text)
                 with st.chat_message("assistant"):
                     with st.spinner("Agent thinking..."):
                         try:
                             response_text, updated_messages = run_agent(
                                 st.session_state.graph,
-                                prompt_text,
+                                _prompt_text,
                                 st.session_state.messages,
                             )
                             st.markdown(response_text)
@@ -542,3 +555,4 @@ else:
                         except Exception as exc:
                             st.error(f"⚠️ Agent error: {exc}")
                 st.rerun()
+
