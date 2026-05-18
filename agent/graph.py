@@ -62,9 +62,22 @@ def create_agent_graph(embedder, tracker):
         """Invoke the LLM with the current message history."""
         messages = state["messages"]
 
+        # Build dynamic step manifest so the LLM knows real step titles
+        step_lines = "\n".join(
+            f"  {s['id']} — {s['title']}" for s in tracker.steps
+        )
+        step_manifest = (
+            f"SOP Step Reference (use these titles, not raw IDs):\n{step_lines}"
+            if step_lines else ""
+        )
+        resolved_prompt = SYSTEM_PROMPT.format(step_manifest=step_manifest)
+
         # Ensure the system prompt is at the front
         if not messages or not isinstance(messages[0], SystemMessage):
-            messages = [SystemMessage(content=SYSTEM_PROMPT)] + list(messages)
+            messages = [SystemMessage(content=resolved_prompt)] + list(messages)
+        else:
+            # Replace stale system prompt with refreshed one
+            messages = [SystemMessage(content=resolved_prompt)] + list(messages[1:])
 
         try:
             response = llm_with_tools.invoke(messages)

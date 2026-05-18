@@ -68,27 +68,40 @@ class SOPStateTracker:
         """Return a summary of the current SOP execution status.
 
         Returns:
-            Dict with keys: total, completed_count, pending (list of ids),
-            flags (list of flag dicts).
+            Dict with keys: total, completed_count, pending (list of id+title dicts),
+            completed (list of id+title dicts), flags (list of flag dicts),
+            steps_manifest (id -> title mapping for all steps).
         """
+        id_to_title = {s["id"]: s["title"] for s in self.steps}
         all_ids = [s["id"] for s in self.steps]
-        pending = [sid for sid in all_ids if sid not in self.completed]
+
+        pending = [
+            {"id": sid, "title": id_to_title.get(sid, sid)}
+            for sid in all_ids
+            if sid not in self.completed
+        ]
+        completed = [
+            {"id": sid, "title": id_to_title.get(sid, sid)}
+            for sid in self.completed
+        ]
         return {
             "total": len(self.steps),
             "completed_count": len(self.completed),
             "pending": pending,
+            "completed": completed,
             "flags": self.flags,
+            "steps_manifest": id_to_title,
         }
 
-    def get_next_pending(self) -> str | None:
-        """Return the id of the first step not yet completed.
+    def get_next_pending(self) -> dict | None:
+        """Return the id and title of the first step not yet completed.
 
         Returns:
-            The step id string, or None if all steps are done.
+            Dict with 'id' and 'title', or None if all steps are done.
         """
         for step in self.steps:
             if step["id"] not in self.completed:
-                return step["id"]
+                return {"id": step["id"], "title": step["title"]}
         return None
 
     def log(self, step_id: str, action: str, detail: str = "") -> None:

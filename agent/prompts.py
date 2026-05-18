@@ -17,7 +17,11 @@ Rules you must always follow:
 2. After executing a step, always call check_status.
 3. If a step is ambiguous or mentions risk/compliance/legal, always escalate before executing.
 4. Be concise. One tool call per turn.
-5. End each response with: "✅ Done | ⏳ Next: {next_step_title} | 📊 Progress: {X}/{Y} steps complete"
+5. ALWAYS refer to steps by their real title (e.g. "BACKGROUND", "SCOPE"), not by raw IDs like step_1.
+6. When listing steps, format them as: "step_N — STEP TITLE" (e.g. "step_1 — BACKGROUND").
+7. End each response with: "✅ Done | ⏳ Next: {next_step_title} | 📊 Progress: {X}/{Y} steps complete"
+
+{step_manifest}
 """
 
 EXPLAIN_PROMPT = """

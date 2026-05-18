@@ -54,10 +54,19 @@ def setup_tools(embedder, tracker) -> list:
     def execute_step(step_id: str) -> str:
         """Mark a specific SOP step as executed and completed. Use the step_id exactly as returned by retrieve_step (e.g. 'step_1', 'step_3')."""
         try:
+            # Look up the title for a friendlier confirmation
+            id_to_title = {s["id"]: s["title"] for s in tracker.steps}
+            title = id_to_title.get(step_id, step_id)
+
             result = tracker.mark_complete(step_id)
             next_pending = tracker.get_next_pending()
-            next_label = next_pending if next_pending else "ALL STEPS COMPLETE"
-            return f"✅ Executed: {step_id}. Next pending: {next_label}"
+
+            if next_pending:
+                next_label = f"{next_pending['id']} — {next_pending['title']}"
+            else:
+                next_label = "ALL STEPS COMPLETE"
+
+            return f"✅ Executed: {step_id} — {title}. Next pending: {next_label}"
         except Exception as exc:
             return f"⚠️ Error executing step: {exc}. Please retry."
 
@@ -99,17 +108,31 @@ def setup_tools(embedder, tracker) -> list:
         """Check the current execution status of the SOP. Returns total steps, completed steps, and any flags."""
         try:
             status = tracker.get_status()
-            pending = status["pending"]
+            pending = status["pending"]    # list of {id, title}
+            completed = status["completed"]  # list of {id, title}
             flags = status["flags"]
+
+            pending_lines = "\n".join(
+                f"    • {s['id']} — {s['title']}" for s in pending
+            ) or "    None"
+
+            completed_lines = "\n".join(
+                f"    ✓ {s['id']} — {s['title']}" for s in completed
+            ) or "    None"
+
+            flagged_lines = "\n".join(
+                f"    ⚠ {f['step_id']} — {f['reason']}" for f in flags
+            ) or "    None"
 
             report = (
                 f"📊 SOP Progress Report:\n"
-                f"  Total Steps: {status['total']}\n"
-                f"  Completed: {status['completed_count']}\n"
-                f"  Pending: {len(pending)} steps\n"
-                f"  Flags: {len(flags)} items flagged for review\n"
-                f"  Pending steps: {', '.join(pending) or 'None'}\n"
-                f"  Flagged steps: {', '.join([f['step_id'] for f in flags]) or 'None'}"
+                f"  Total Steps   : {status['total']}\n"
+                f"  Completed     : {status['completed_count']}\n"
+                f"  Pending       : {len(pending)}\n"
+                f"  Flagged       : {len(flags)}\n\n"
+                f"Completed steps:\n{completed_lines}\n\n"
+                f"Pending steps:\n{pending_lines}\n\n"
+                f"Flagged steps:\n{flagged_lines}"
             )
             return report
         except Exception as exc:
