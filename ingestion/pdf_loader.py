@@ -31,6 +31,7 @@ class SOPLoader:
             pdf_path: Absolute or relative path to the PDF.
         """
         self.pdf_path = pdf_path
+        self._chunks_cache: list[dict] | None = None  # cache to avoid re-parsing
 
     # ------------------------------------------------------------------ #
     #  Public API                                                          #
@@ -46,9 +47,15 @@ class SOPLoader:
             page          – page number where the section starts
             step_number   – integer step index
 
+        Results are cached so subsequent calls do not re-parse the PDF.
+
         Returns:
             List of chunk dicts. Empty list on error.
         """
+        # Return cached result to avoid re-parsing and duplicate steps
+        if self._chunks_cache is not None:
+            return self._chunks_cache
+
         try:
             pages = self._extract_pages()
         except FileNotFoundError:
@@ -72,11 +79,13 @@ class SOPLoader:
         boundaries = self._detect_boundaries(lines_with_pages)
 
         if boundaries:
-            return self._build_chunks_from_boundaries(lines_with_pages, boundaries)
+            self._chunks_cache = self._build_chunks_from_boundaries(lines_with_pages, boundaries)
         else:
             # Fallback: split by double newlines into ≤500-char chunks
             logger.info("No section boundaries found — using paragraph fallback.")
-            return self._fallback_chunking(pages)
+            self._chunks_cache = self._fallback_chunking(pages)
+
+        return self._chunks_cache
 
     def extract_step_list(self) -> list[dict]:
         """Return a simplified list of step metadata.
@@ -114,15 +123,23 @@ class SOPLoader:
             raise
         return pages
 
+    # Matches TOC dot-leader lines like "1. BACKGROUND ............" or "Purpose ..........."
+    _TOC_LEADER_PATTERN = re.compile(r"\.{3,}\s*\d*\s*$")
+
     def _detect_boundaries(
         self, lines_with_pages: list[tuple[str, int]]
     ) -> list[tuple[int, str, int]]:
         """Find section boundary indices using heuristic patterns.
 
+        TOC lines (those ending with dot leaders like ".......") are
+        explicitly excluded so the Table of Contents is never mistaken
+        for real section headings.
+
         Returns:
             List of (line_index, heading_text, page_number) tuples.
         """
         boundaries: list[tuple[int, str, int]] = []
+        seen_titles: set[str] = set()  # deduplicate headings with identical text
         total_lines = len(lines_with_pages)
 
         for idx, (line, page_num) in enumerate(lines_with_pages):
@@ -130,12 +147,23 @@ class SOPLoader:
             if not stripped:
                 continue
 
+            # Skip TOC dot-leader lines (e.g. "1. BACKGROUND ............")
+            if self._TOC_LEADER_PATTERN.search(stripped):
+                continue
+
             # Priority a-c: regex patterns
+            matched = False
             for pattern in self._PATTERNS:
                 if pattern.match(stripped):
-                    boundaries.append((idx, stripped, page_num))
+                    # Deduplicate: skip if we already have this exact heading
+                    norm = stripped.lower()
+                    if norm not in seen_titles:
+                        boundaries.append((idx, stripped, page_num))
+                        seen_titles.add(norm)
+                    matched = True
                     break
-            else:
+
+            if not matched:
                 # Priority d: short line followed by a blank line
                 if (
                     len(stripped) < 80
@@ -145,7 +173,10 @@ class SOPLoader:
                     # Only treat as boundary if it looks like a heading
                     # (starts with uppercase letter and is not a sentence fragment)
                     if stripped[0].isupper() and not stripped.endswith(","):
-                        boundaries.append((idx, stripped, page_num))
+                        norm = stripped.lower()
+                        if norm not in seen_titles:
+                            boundaries.append((idx, stripped, page_num))
+                            seen_titles.add(norm)
 
         return boundaries
 
