@@ -20,9 +20,21 @@ class SOPLoader:
     # Heuristic patterns ordered by priority
     _PATTERNS = [
         re.compile(r"^(Step|STEP)\s+\d+", re.IGNORECASE),  # "Step 3: ..."
-        re.compile(r"^\d+[\.\)]\s+[A-Z]"),                  # "3. Approve" / "3) Approve"
+        re.compile(r"^\d+[\.\)]\s+[A-Z]{2,}"),              # "3. APPROVE" (ALL CAPS only, not "3. Gender")
         re.compile(r"^[A-Z\s]{10,}$"),                       # ALL CAPS lines > 10 chars
     ]
+
+    # Headings that are structural/navigational and should never be treated as steps
+    _EXCLUDED_HEADINGS = {
+        "table of contents",
+        "contents",
+        "index",
+        "references",
+        "appendix",
+        "revision history",
+        "document history",
+        "change log",
+    }
 
     def __init__(self, pdf_path: str):
         """Initialise with the path to an SOP PDF file.
@@ -149,6 +161,10 @@ class SOPLoader:
 
             # Skip TOC dot-leader lines (e.g. "1. BACKGROUND ............")
             if self._TOC_LEADER_PATTERN.search(stripped):
+                continue
+
+            # Skip known structural/navigational headings that are never steps
+            if stripped.lower() in self._EXCLUDED_HEADINGS:
                 continue
 
             # Priority a-c: regex patterns
