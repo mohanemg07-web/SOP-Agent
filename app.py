@@ -516,24 +516,23 @@ else:
 
     cols = st.columns(4)
 
-    # Generic tool-focused actions — work for any SOP
+    # Contextual tool-focused actions
     _prompts = [
         "What are all the steps in this SOP?",
-        "Execute the next pending step",
-        "Explain the current step",
+        "Execute this step that we just discussed",
+        "Explain this step that we just discussed in detail",
         "Check my progress",
     ]
     _labels = [
         "📋 List all steps",
-        "▶ Execute next step",
-        "❓ Explain a step",
+        "▶ Execute this step",
+        "❓ Explain this step",
         "📊 Check my progress",
     ]
 
     for col, (_label, _prompt_text) in zip(cols, zip(_labels, _prompts)):
         with col:
             if st.button(_label, key=f"btn_{_label}"):
-                # Inject the prompt as if the user typed it
                 with st.chat_message("user"):
                     st.markdown(_prompt_text)
                 with st.chat_message("assistant"):
@@ -549,5 +548,3 @@ else:
                         except Exception as exc:
                             st.error(f"⚠️ Agent error: {exc}")
                 st.rerun()
-
-

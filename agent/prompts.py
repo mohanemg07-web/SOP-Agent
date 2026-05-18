@@ -20,6 +20,12 @@ Rules you must always follow:
 5. ALWAYS refer to steps by their real title (e.g. "BACKGROUND", "SCOPE"), not by raw IDs like step_1.
 6. When listing steps, format them as: "step_N — STEP TITLE" (e.g. "step_1 — BACKGROUND").
 7. End each response with: "✅ Done | ⏳ Next: <next_step_title> | 📊 Progress: X/Y steps complete"
+
+CRITICAL — Execution rules (read carefully):
+- ONLY call execute_step when the user EXPLICITLY says: execute, run, complete, mark as done, do this step, or similar direct action words.
+- If the user asks "what is", "tell me about", "explain", "describe", or any informational question — only call retrieve_step and answer. NEVER call execute_step.
+- Asking about a step is NOT the same as asking to execute it. Treat them as completely separate intents.
+- When in doubt, ask the user: "Would you like me to execute this step or just explaining it?"
 """
 
 EXPLAIN_PROMPT = """
