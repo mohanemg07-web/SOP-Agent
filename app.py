@@ -225,6 +225,8 @@ if "step_list" not in st.session_state:
     st.session_state.step_list = []
 if "sop_filename" not in st.session_state:
     st.session_state.sop_filename = ""
+if "selected_step_id" not in st.session_state:
+    st.session_state.selected_step_id = None
 
 
 # ------------------------------------------------------------------ #
@@ -239,6 +241,7 @@ def reset_project():
     st.session_state.graph = None
     st.session_state.step_list = []
     st.session_state.sop_filename = ""
+    st.session_state.selected_step_id = None
     shutil.rmtree("./chroma_db", ignore_errors=True)
     st.rerun()
 
@@ -514,13 +517,39 @@ else:
     Suggested Actions
     </div>""", unsafe_allow_html=True)
 
+    # ── Step selector dropdown ─────────────────────────────────────
+    _steps = st.session_state.step_list
+    if _steps:
+        _step_options = {f"{s['id']} — {s['title']}": s for s in _steps}
+        _default_label = (
+            next(
+                (f"{s['id']} — {s['title']}" for s in _steps
+                 if s['id'] == st.session_state.selected_step_id),
+                list(_step_options.keys())[0]
+            )
+        )
+        _selected_label = st.selectbox(
+            "🔍 Select a step",
+            options=list(_step_options.keys()),
+            index=list(_step_options.keys()).index(_default_label),
+            key="step_selector",
+            label_visibility="collapsed",
+        )
+        _sel = _step_options[_selected_label]
+        st.session_state.selected_step_id = _sel["id"]
+        _sel_id    = _sel["id"]
+        _sel_title = _sel["title"]
+    else:
+        _sel_id    = "the next pending step"
+        _sel_title = "the next pending step"
+
+    # ── Action buttons ─────────────────────────────────────────────
     cols = st.columns(4)
 
-    # Contextual tool-focused actions
     _prompts = [
         "What are all the steps in this SOP?",
-        "Execute this step that we just discussed",
-        "Explain this step that we just discussed in detail",
+        f"Execute {_sel_id} — {_sel_title}",
+        f"Explain step {_sel_id} — {_sel_title} in detail. What does it require, why does it exist, and what happens if skipped?",
         "Check my progress",
     ]
     _labels = [
@@ -548,3 +577,4 @@ else:
                         except Exception as exc:
                             st.error(f"⚠️ Agent error: {exc}")
                 st.rerun()
+
