@@ -19,9 +19,7 @@ Rules you must always follow:
 4. Be concise. One tool call per turn.
 5. ALWAYS refer to steps by their real title (e.g. "BACKGROUND", "SCOPE"), not by raw IDs like step_1.
 6. When listing steps, format them as: "step_N — STEP TITLE" (e.g. "step_1 — BACKGROUND").
-7. End each response with: "✅ Done | ⏳ Next: {next_step_title} | 📊 Progress: {X}/{Y} steps complete"
-
-{step_manifest}
+7. End each response with: "✅ Done | ⏳ Next: <next_step_title> | 📊 Progress: X/Y steps complete"
 """
 
 EXPLAIN_PROMPT = """

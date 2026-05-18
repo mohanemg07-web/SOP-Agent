@@ -67,10 +67,12 @@ def create_agent_graph(embedder, tracker):
             f"  {s['id']} — {s['title']}" for s in tracker.steps
         )
         step_manifest = (
-            f"SOP Step Reference (use these titles, not raw IDs):\n{step_lines}"
+            f"\nSOP Step Reference (use these titles, not raw IDs):\n{step_lines}"
             if step_lines else ""
         )
-        resolved_prompt = SYSTEM_PROMPT.format(step_manifest=step_manifest)
+        # Use concatenation (not .format) to avoid KeyError on any remaining
+        # {placeholder} patterns inside the prompt text
+        resolved_prompt = SYSTEM_PROMPT + step_manifest
 
         # Ensure the system prompt is at the front
         if not messages or not isinstance(messages[0], SystemMessage):
