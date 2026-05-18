@@ -516,29 +516,23 @@ else:
 
     cols = st.columns(4)
 
-    # Build dynamic prompts from the real step titles
-    _steps = st.session_state.step_list
-    _s1_id    = _steps[0]["id"]    if len(_steps) > 0 else "step_1"
-    _s1_title = _steps[0]["title"] if len(_steps) > 0 else "Step 1"
-    _s2_id    = _steps[1]["id"]    if len(_steps) > 1 else "step_2"
-    _s2_title = _steps[1]["title"] if len(_steps) > 1 else "Step 2"
-
+    # Generic tool-focused actions — work for any SOP
     _prompts = [
-        "What are the first 3 steps?",
-        f"Execute {_s1_id}",
-        f"Why does {_s2_title} exist?",
+        "What are all the steps in this SOP?",
+        "Execute the next pending step",
+        "Explain the current step",
         "Check my progress",
     ]
     _labels = [
-        "📋 List first 3 steps",
-        f"▶ Execute {_s1_title[:18]}{'...' if len(_s1_title) > 18 else ''}",
-        f"❓ Why {_s2_title[:18]}{'...' if len(_s2_title) > 18 else ''}?",
+        "📋 List all steps",
+        "▶ Execute next step",
+        "❓ Explain a step",
         "📊 Check my progress",
     ]
 
     for col, (_label, _prompt_text) in zip(cols, zip(_labels, _prompts)):
         with col:
-            if st.button(_label, key=f"btn_{_prompt_text}"):
+            if st.button(_label, key=f"btn_{_label}"):
                 # Inject the prompt as if the user typed it
                 with st.chat_message("user"):
                     st.markdown(_prompt_text)
@@ -555,4 +549,5 @@ else:
                         except Exception as exc:
                             st.error(f"⚠️ Agent error: {exc}")
                 st.rerun()
+
 
